@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/creator.css">
+  <title>Board Creator</title>
+</head>
+<body>
+  <h1>Board Creator Workspace</h1>
+  <p>Build your grid configuration below. (Tip: Use the save button to register your setup!)</p>
+  
+  <div id="editor-container">
+    <div class="creator-controls">
+      <input type="text" id="board-title" placeholder="Enter Board Title (e.g., Birthday Edition)" class="input-field">
+      <button onclick="saveCurrentBoard()" class="btn btn-cyan">Save Board Configuration</button>
+      <button onclick="openDeleteModal()" class="btn btn-danger">Delete Board</button>
+    </div>
+    
+    <div id="matrix-builder" class="jeopardy-grid">
+      Loading grid cells...
+    </div>
+  </div>
+
+  <div id="delete-modal" class="modal-overlay">
+    <div class="modal-content" style="border-color: #d9534f;"> <h2 style="color: #d9534f;"> Confirm Deletion</h2>
+      <p>Are you absolutely sure you want to delete this board configuration? This action cannot be undone and will permanently wipe it from disk storage.</p>
+      
+      <div class="modal-btn-group">
+        <button onclick="executePermanentDelete()" class="btn btn-danger">Yes, Delete It</button>
+        <button onclick="closeDeleteModal()" class="btn" style="background-color: #555555; color: #ffffff;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <a href="/" class="btn btn-danger">Back to Hub</a>
+  <script src="/js/creator.js"></script>
+</body>
+</html>

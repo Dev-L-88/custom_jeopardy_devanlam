@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/creator.css">
+  <title>Custom Jeopardy Website Thing</title>
+</head>
+<body>
+  <h1>🎂 Custom Jeopardy Website Thing!! 🎂</h1>
+  
+  <div style="margin-top: 50px;">
+    <a href="/creator" class="btn">Create Board</a>
+    <button onclick="openEditModal()" class="btn">Edit Board</button>
+    
+    <hr>
+    
+    <h3>Select a Saved Jeopardy Board to Launch:</h3>
+    
+    <select id="board-selector" class="input-field" style="margin-bottom: 15px; display: inline-block;">
+      <% if (Object.keys(boards).length === 0) { %>
+        <option value="default">No boards found (Loads Default Sample)</option>
+      <% } else { %>
+        <% for (let id in boards) { %>
+          <option value="<%= id %>"><%= boards[id].title %></option>
+        <% } %>
+      <% } %>
+    </select>
+    
+    <br>
+    <button onclick="launchSelectedGame()" class="btn btn-cyan">Host a Game</button>
+  </div>
+
+  <div id="edit-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Select Board to Edit</h2>
+      <p style="color: #00f5ff;">Click any board configuration below to open it in the editor workspace:</p>
+      
+      <ul id="modal-board-list" class="modal-list"></ul>
+      
+      <button onclick="closeEditModal()" class="btn btn-danger" style="margin-top: 10px;">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    // Handles launching the dynamic game room
+    async function launchSelectedGame() {
+      const selectedId = document.getElementById('board-selector').value;
+      const response = await fetch('/api/create-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ boardId: selectedId }) 
+      });
+      const data = await response.json();
+      window.location.href = `/host/${data.roomCode}`;
+    }
+
+    // --- MODAL POPUP LOGIC ENGAGING ---
+    function openEditModal() {
+      const selector = document.getElementById('board-selector');
+      
+      if (selector.value === 'default') {
+        alert("You don't have any saved boards to edit yet! Click 'Create Board' to make your first one.");
+        return;
+      }
+
+      const listContainer = document.getElementById('modal-board-list');
+      listContainer.innerHTML = ""; // Wipe past links before loading fresh arrays
+
+      // Convert drop-down values into interactive modal selection layout buttons
+      const optionsArray = Array.from(selector.options);
+      optionsArray.forEach((option) => {
+        const listItem = document.createElement('li');
+        
+        listItem.innerHTML = `
+          <button class="modal-item-btn" onclick="navigateToEditor('${option.value}')">
+            ${option.text}
+          </button>
+        `;
+        listContainer.appendChild(listItem);
+      });
+
+      // Change CSS display state from none to flex to show overlay
+      document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+    }
+
+    function navigateToEditor(boardId) {
+      window.location.href = `/creator?boardId=${boardId}`;
+    }
+  </script>
+</body>
+</html>

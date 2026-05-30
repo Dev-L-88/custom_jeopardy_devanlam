@@ -1,0 +1,99 @@
+/* Workspace / Creator Grid Container */
+#editor-container {
+  border: 2px dashed #ffff00;
+  padding: 40px;
+  margin: 20px auto;
+  max-width: 1200px;
+  background-color: #020b24;
+  border-radius: 8px;
+}
+
+.creator-controls {
+  margin-bottom: 25px;
+}
+
+/* The 5-Column Grid Layout */
+.jeopardy-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Column Header Styles (Categories) */
+.category-header {
+  background-color: #020b24;
+  border: 2px solid #ffff00;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.category-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffff00;
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed #ffff00;
+  text-align: center;
+  outline: none;
+}
+
+/* Individual Clue Cards */
+.clue-card {
+  background-color: #020b24;
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.clue-value {
+  color: #ffff00;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.clue-card label {
+  font-size: 11px;
+  color: #00f5ff;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.clue-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  font-size: 13px;
+  background-color: #061436;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  resize: vertical;
+  outline: none;
+}
+
+.clue-input:focus {
+  border-color: #00f5ff;
+}
+
+
+.clue-input-card textarea.clue-question-input,
+.clue-input-card input.clue-answer-input {
+    background-color: #0b1528 !important; 
+    color: #ffffff !important;           
+    border: 1px solid #00f5ff !important; 
+    border-radius: 4px;                  
+    padding: 6px;           
+    width: 92.5%;
+}

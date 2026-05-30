@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+  <title>Jeopardy Buzzer - Player Interface</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h2>Room Code: <span style="color: #ffff00;"><%= roomCode %></span></h2>
+  
+  <div id="join-form-area">
+    <h3>Enter Your Contestant Handle:</h3>
+    <input type="text" id="username-input" class="input-field" placeholder="Player Name..." maxlength="15" style="margin: 0 auto 15px auto; display: block;">
+    <button onclick="connectPlayerToRoom()" class="btn btn-cyan" style="font-size: 20px; padding: 10px 30px;">Enter Lobby Room</button>
+  </div>
+
+  <div id="game-arena-area" style="display: none;">
+    <h1 id="player-greeting">Welcome!</h1>
+    <div id="status">Buzzers are ready...</div>
+    
+    <button id="giant-buzzer-element" onclick="triggerBuzzerClick()" class="buzzer-btn">
+      BUZZ IN
+    </button>
+  </div>
+
+  <script>
+    const roomCode = "<%= roomCode %>";
+    let currentUsername = "";
+    const socket = io({ transports: ['websocket'] });
+
+    // Handles locking the client registration pathway
+    function connectPlayerToRoom() {
+      const nameInput = document.getElementById('username-input').value.trim();
+      if (!nameInput) return alert("Please type in a valid screen name first!");
+
+      currentUsername = nameInput;
+
+      // Send the player join registration down to server framework
+      socket.emit('joinRoom', { roomCode: roomCode, username: currentUsername });
+
+      // Shift user viewport away from the login layout card over onto the interactive buzzer display
+      document.getElementById('join-form-area').style.display = 'none';
+      document.getElementById('player-greeting').innerText = `Contestant: ${currentUsername}`;
+      document.getElementById('game-arena-area').style.display = 'block';
+    }
+
+    // --- REAL-TIME INTERACTIVE CLICK ACTIONS ---
+    function triggerBuzzerClick() {
+      const buzzerBtn = document.getElementById('giant-buzzer-element');
+      
+      // Safety step: block double submissions if already deactivated locally
+      if (buzzerBtn.disabled) return;
+
+      // Dispatch real-time lock activation straight to backend engine
+      socket.emit('playerBuzz', { roomCode: roomCode, username: currentUsername });
+    }
+
+    // --- REAL-TIME ROOM SYNC LISTENER HOOKS ---
+
+    // --- REAL-TIME ROOM SYNC LISTENER HOOKS ---
+    socket.on('buzzerLocked', (buzzQueue) => {
+      const statusText = document.getElementById('status');
+      const buzzerBtn = document.getElementById('giant-buzzer-element');
+
+      // Look up where current user is sitting inside the backend queue array
+      const myQueueIndex = buzzQueue.indexOf(currentUsername);
+
+      if (myQueueIndex !== -1) {
+        // This specific player has already buzzed in
+        buzzerBtn.disabled = true;
+
+        const placementWord = getOrdinalWord(myQueueIndex);
+
+        if (myQueueIndex === 0) {
+          statusText.innerText = `YOU BUZZED IN FIRST!`;
+          statusText.style.color = "#ffff00"; 
+        } else {
+          statusText.innerText = `You buzzed in ${placementWord}.`;
+          statusText.style.color = "#00f5ff"; 
+        }
+      } else {
+        // FIXED: The player has NOT buzzed yet, but someone else just did!
+        const leadingBuzzer = buzzQueue[0];
+        statusText.innerText = `${leadingBuzzer} buzzed in first!`;
+        statusText.style.color = "#d9534f"; // Soft warning red
+        
+        // Optional: Keep their buzzer active if you want to let them queue up late,
+        // or set buzzerBtn.disabled = true; if you want to lock out late-comers entirely.
+      }
+    });
+
+    // Host reset signal arrives down from control deck console panel
+    socket.on('buzzerResetSignal', () => {
+      const statusText = document.getElementById('status');
+      const buzzerBtn = document.getElementById('giant-buzzer-element');
+
+      // Reactivate button mechanics and return styles back to baseline
+      buzzerBtn.disabled = false;
+      statusText.innerText = "Buzzers are LIVE!";
+      statusText.style.color = "#00f5ff"; // Back to neon cyan state
+    });
+
+    // Error handling intercept (e.g., if room session closed down unexpectedly)
+    socket.on('errorMsg', (msg) => {
+      alert(msg);
+      window.location.href = "/";
+    });
+
+    function getOrdinalWord(index) {
+      const places = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
+      return places[index] || `${index + 1}th`;
+    }
+  </script>
+</body>
+</html>

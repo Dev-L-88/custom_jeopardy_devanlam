@@ -1,0 +1,41 @@
+/* Room Status Display (Host & Player Feedback text) */
+#buzzer-display, #status {
+  font-size: 32px;
+  margin: 20px;
+  min-height: 50px;
+  color: #00f5ff;
+  font-weight: bold;
+}
+
+#player-list {
+  margin-top: 20px;
+  font-size: 20px;
+}
+
+/* Giant Real-Time Buzzer Button */
+.buzzer-btn {
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background-color: #d9534f;
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: bold;
+  border: 10px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  margin: 40px auto;
+  display: block;
+  transition: transform 0.1s ease;
+}
+
+.buzzer-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.buzzer-btn:disabled {
+  background-color: #555555;
+  border-color: #888888;
+  cursor: not-allowed;
+  box-shadow: none;
+}

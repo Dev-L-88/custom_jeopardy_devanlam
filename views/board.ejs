@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/board.css">
+  <title>Jeopardy Board - <%= roomCode %></title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h1 id="game-title" style="margin: 5px 0;">Loading Jeopardy Game...</h1>
+  <h2 style="font-size: 16px; margin: 0 0 10px 0;">Room Code: <span style="color: #00f5ff;"><%= roomCode %></span></h2>
+
+  <div id="game-board-container" class="board-grid"></div>
+
+  <div class="scoreboard-section">
+    <h3 class="scoreboard-title">Active Competitors Scoreboard</h3>
+    <div id="scoreboard-players-wrapper" class="players-score-flex">
+      <span style="color: #555555; font-style: italic;">Waiting for contestants to sync...</span>
+    </div>
+  </div>
+
+  <div id="clue-display-overlay" class="clue-overlay">
+    <div class="clue-overlay-content">
+      <div id="active-prompt-text" class="overlay-prompt"></div>
+      <button id="reveal-answer-btn" onclick="revealClueAnswer()" class="btn btn-cyan" style="font-size: 24px; padding: 15px 35px;">
+        Reveal Answer
+      </button>
+      <div id="active-answer-text" class="overlay-answer" style="display: none;"></div>
+      <br><br>
+      <button onclick="closeClueOverlay()" class="btn btn-danger" style="font-size: 18px; padding: 10px 25px;">
+        Back to Board
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const roomCode = "<%= roomCode %>";
+    let activeClueData = null;
+
+    // --- SOCKET REAL-TIME LISTENER CONNECTIONS ---
+    const socket = io({ transports: ['websocket'] });
+
+    // Instantly join the designated socket broadcast channel matching our room code
+    socket.emit('joinRoom', { roomCode: roomCode, username: "GAME_BOARD_DISPLAY" });
+
+    // Handle incoming data payload transmissions from the server engine
+    socket.on('playerDataUpdate', (playersArray) => {
+      updateLiveScores(playersArray);
+    });
+
+    // --- UPDATED: SHOW WHO BUZZED IN DIRECTLY ON THE FULLSCREEN OVERLAY ---
+    socket.on('buzzerLocked', (buzzQueue) => {
+      const leadingBuzzerName = buzzQueue[0];
+      console.log(`Live active room buzz leader: ${leadingBuzzerName}`);
+
+      // If a clue is currently open, dynamically add a banner showing who buzzed in first!
+      const overlayPrompt = document.getElementById('active-prompt-text');
+      const existingIndicator = document.getElementById('buzz-indicator');
+      
+      if (overlayPrompt && !existingIndicator) {
+        const indicator = document.createElement('div');
+        indicator.id = 'buzz-indicator';
+        indicator.style.fontSize = '28px';
+        indicator.style.color = '#ffff00';
+        indicator.style.marginTop = '20px';
+        indicator.style.fontWeight = 'bold';
+        indicator.innerText = `🔔 ${leadingBuzzerName} BUZZED IN FIRST!`;
+        
+        // Insert it neatly right below the question text
+        overlayPrompt.after(indicator);
+      }
+    });
+
+    // Clean up the buzzer banner when the host resets the buzzers
+    socket.on('buzzerResetSignal', () => {
+      const existingIndicator = document.getElementById('buzz-indicator');
+      if (existingIndicator) {
+        existingIndicator.remove();
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const response = await fetch(`/api/get-room-board/${roomCode}`);
+        const data = await response.json();
+
+        if (data.success) {
+          renderLiveBoard(data.boardData);
+        } else {
+          document.getElementById('game-title').innerText = "Failed to load board data.";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('game-title').innerText = "Connection error loading board.";
+      }
+    });
+
+    function renderLiveBoard(boardData) {
+      document.getElementById('game-title').innerText = boardData.title || "Jeopardy Match";
+      const container = document.getElementById("game-board-container");
+      container.innerHTML = "";
+
+      // 1. Render Category Titles (Top Row)
+      boardData.categories.forEach(cat => {
+        const header = document.createElement("div");
+        header.className = "board-header";
+        header.innerText = cat.name;
+        container.appendChild(header);
+      });
+
+      // 2. Render clues by Row priority ($200s, then $400s...)
+      const totalRows = 5;
+      for (let row = 0; row < totalRows; row++) {
+        for (let col = 0; col < 5; col++) {
+          const clue = boardData.categories[col].clues[row];
+          const clueBox = document.createElement("div");
+          clueBox.className = "board-clue";
+          clueBox.innerText = clue ? `$${clue.value}` : "---";
+
+          if (clue) {
+            clueBox.onclick = () => {
+              if (clueBox.classList.contains('clicked')) return;
+              clueBox.classList.add('clicked');
+              launchClueOverlay(clue);
+            };
+          } else {
+            clueBox.classList.add('clicked');
+          }
+
+          container.appendChild(clueBox);
+        }
+      }
+    }
+
+    // --- RENDER SCOREBOARD CARD MODULES ---
+    function updateLiveScores(players) {
+      const wrapper = document.getElementById('scoreboard-players-wrapper');
+      wrapper.innerHTML = ""; // Clear existing users display frame
+
+      if (!players || players.length === 0) {
+        wrapper.innerHTML = `<span style="color: #555555; font-style: italic;">No contestants inside the lobby room.</span>`;
+        return;
+      }
+
+      // Generate a neat dashboard tracking card for every player active in session
+      players.forEach(player => {
+        // Skip display rendering if the user profile matches an internal display label
+        if (player.username === "GAME_BOARD_DISPLAY" || player.username === "HOST_CONSOLE") return;
+
+        const scoreCard = document.createElement('div');
+        scoreCard.className = 'player-score-card';
+        scoreCard.innerHTML = `
+          <p class="player-score-name">${player.username}</p>
+          <p class="player-score-points">${player.score ?? 0} pts</p>
+        `;
+        wrapper.appendChild(scoreCard);
+      });
+    }
+
+    // --- INTERACTIVE MODAL CONTROLS ---
+    // --- INTERACTIVE MODAL CONTROLS ---
+    function launchClueOverlay(clue) {
+      activeClueData = clue;
+      
+      const promptTextElement = document.getElementById('active-prompt-text');
+      
+      // Wipe old template contents clear
+      promptTextElement.innerHTML = "";
+      
+      // 1. Append standard text question string node
+      const questionText = document.createElement('div');
+      questionText.innerText = clue.question || "No prompt written.";
+      promptTextElement.appendChild(questionText);
+      
+      // 2. NEW: Check if an image payload string exists on this card profile
+      if (clue.image && clue.image.trim() !== "") {
+        const clueImageElement = document.createElement('img');
+        clueImageElement.src = clue.image;
+        clueImageElement.style.maxHeight = "350px";
+        clueImageElement.style.maxWidth = "80%";
+        clueImageElement.style.marginTop = "20px";
+        clueImageElement.style.border = "3px solid #ffffff";
+        clueImageElement.style.borderRadius = "8px";
+        clueImageElement.style.boxShadow = "0px 4px 15px rgba(0,0,0,0.5)";
+        promptTextElement.appendChild(clueImageElement);
+      }
+
+      document.getElementById('active-answer-text').innerText = clue.answer ? `Correct response: ${clue.answer}` : "No answer written.";
+      document.getElementById('active-answer-text').style.display = 'none';
+      document.getElementById('reveal-answer-btn').style.display = 'inline-block';
+      
+      // Clean old indicator banners if they lingered from a previous card
+      const existingIndicator = document.getElementById('buzz-indicator');
+      if (existingIndicator) existingIndicator.remove();
+
+      document.getElementById('clue-display-overlay').style.display = 'flex';
+    }
+
+    function revealClueAnswer() {
+      document.getElementById('reveal-answer-btn').style.display = 'none';
+      document.getElementById('active-answer-text').style.display = 'block';
+    }
+
+    function closeClueOverlay() {
+      activeClueData = null;
+      document.getElementById('clue-display-overlay').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
