@@ -12,7 +12,7 @@ const io = new Server(server, {
 // --- MIDDLEWARE & ENGINE CONFIGURATION ---
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/', express.static(path.join(__dirname, 'public'))); 
 app.use(express.json());
 
 // In-memory runtime cache object to manage live interactive game sessions
@@ -26,7 +26,6 @@ function sendUpdatedPlayerData(roomCode) {
 
 // --- APP PAGE ROUTING ENGINE ---
 app.get('/', (req, res) => {
-  // FIXED: No longer reading dead server files. Simply rendering the page!
   res.render('index'); 
 });
 
