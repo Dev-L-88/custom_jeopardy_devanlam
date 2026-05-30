@@ -1,3 +1,8 @@
+body{
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
 /* Room Status Display (Host & Player Feedback text) */
 #buzzer-display, #status {
   font-size: 32px;
