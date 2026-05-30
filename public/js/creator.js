@@ -33,7 +33,6 @@ function renderEditorGrid() {
       const cardDiv = document.createElement("div");
       cardDiv.className = "clue-card";
       
-      // FIXED: Injected descriptive tracking variables straight onto the input elements
       cardDiv.innerHTML = `
         <p class="clue-value">$${value}</p>
         
@@ -70,19 +69,21 @@ function renderEditorGrid() {
   });
 }
 
-// --- FIXED: Injecting Saved Data and Images back into inputs ---
+// --- Injecting Saved Data and Images back into inputs ---
 async function loadBoardDataForEditing(boardId) {
   try {
-    const response = await fetch(`/api/get-board/${boardId}`);
-    const data = await response.json();
+    // Read directly from browser local storage instead of backend API
+    const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
+    const board = localBoards[boardId];
 
-    if (!data.success) {
-      alert("Error loading your saved board configurations.");
+    if (!board) {
+      alert("Saved board configuration layout not found in browser storage.");
       return;
     }
 
-    const board = data.board;
-    document.getElementById("board-title").value = board.title;
+    // FIXED: Making sure this doesn't crash if your title element is called "board-title" or "board-title-input"
+    const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
+    if (titleField) titleField.value = board.title;
 
     // Loop through columns and inject saved category titles and fields
     board.categories.forEach((category, colIndex) => {
@@ -113,20 +114,21 @@ async function loadBoardDataForEditing(boardId) {
 
   } catch (error) {
     console.error("Failed to parse board edit data payload:", error);
-    alert("Connection error fetching board records.");
   }
 }
 
-// --- FIXED: Formally collect text and Image streams on Save click ---
+// --- UPDATED SAVE FUNCTION IN CREATOR.JS ---
 async function saveCurrentBoard() {
-  const title = document.getElementById("board-title").value.trim();
+  const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
+  const title = titleField ? titleField.value.trim() : "";
+  
   if (!title) {
     return alert("Please give your board a title before saving!");
   }
 
+  const boardId = title.toLowerCase().replace(/\s+/g, '-');
   const categories = [];
   
-  // Initialize the category structure array templates
   for (let col = 0; col < 5; col++) {
     const input = document.querySelector(`.category-input[data-col="${col}"]`);
     categories[col] = {
@@ -135,7 +137,6 @@ async function saveCurrentBoard() {
     };
   }
 
-  // Target every input wrapper card and push data directly into correct matrix column array
   const allCards = document.querySelectorAll(".clue-input-card");
   allCards.forEach((card) => {
     const col = parseInt(card.getAttribute("data-col"));
@@ -145,34 +146,28 @@ async function saveCurrentBoard() {
       value: value,
       question: card.querySelector('.clue-question-input').value.trim(),
       answer: card.querySelector('.clue-answer-input').value.trim(),
-      image: card.querySelector('.clue-image-base64').value // <-- SAVES IMAGE AS BASE64 IN JSON!
+      image: card.querySelector('.clue-image-base64').value
     });
   });
 
-  try {
-    const response = await fetch('/api/save-board', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, categories })
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-      alert(`Board "${title}" compiled and saved successfully!`);
-    } else {
-      alert("Failed to save configuration.");
-    }
-  } catch (error) {
-    console.error("Error payload distribution failed:", error);
-    alert("Connection error trying to dispatch payload.");
-  }
+  // Pull existing boards map out of local storage
+  const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
+  
+  // Insert or overwrite our newly modified board layout profile
+  localBoards[boardId] = { id: boardId, title, categories };
+  
+  // Commit straight down to browser client data registry
+  localStorage.setItem("jeopardy_boards", JSON.stringify(localBoards));
+
+  alert(`Board "${title}" saved cleanly to your browser storage!`);
 }
 
 // --- MODAL TOGGLE WINDOW CONTROLS ---
 function openDeleteModal() {
   const urlParams = new URLSearchParams(window.location.search);
   let boardId = urlParams.get('boardId');
-  const title = document.getElementById("board-title").value.trim();
+  const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
+  const title = titleField ? titleField.value.trim() : "";
 
   if (!boardId && !title) {
     return alert("There is no saved board configuration loaded here to delete!");
@@ -184,33 +179,31 @@ function closeDeleteModal() {
   document.getElementById('delete-modal').style.display = 'none';
 }
 
+// --- FIXED: Delete directly from local storage map array instead of backend API ---
 async function executePermanentDelete() {
   const urlParams = new URLSearchParams(window.location.search);
   let boardId = urlParams.get('boardId');
 
   if (!boardId) {
-    const title = document.getElementById("board-title").value.trim();
+    const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
+    const title = titleField ? titleField.value.trim() : "";
     boardId = title.toLowerCase().replace(/\s+/g, '-');
   }
 
   closeDeleteModal();
 
-  try {
-    const response = await fetch(`/api/delete-board/${boardId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      window.location.href = "/";
-    } else {
-      alert(`Could not complete deletion: ${data.message}`);
-    }
-  } catch (error) {
-    console.error("Error attempting payload removal:", error);
-    alert("Connection error trying to reach deletion server endpoint.");
+  // Grab local storage data registry
+  const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
+  
+  if (localBoards[boardId]) {
+    // Drop the property profile match completely
+    delete localBoards[boardId];
+    localStorage.setItem("jeopardy_boards", JSON.stringify(localBoards));
+    
+    alert("Board configuration deleted successfully!");
+    window.location.href = "/";
+  } else {
+    alert("Could not complete deletion: Board profile match not found in storage.");
   }
 }
 

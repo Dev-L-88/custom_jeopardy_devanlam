@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/creator.css">
+  <link rel="stylesheet" href="/css/creator.css">
   <title>Custom Jeopardy Website Thing</title>
 </head>
 <body>
@@ -18,13 +18,7 @@
     <h3>Select a Saved Jeopardy Board to Launch:</h3>
     
     <select id="board-selector" class="input-field" style="margin-bottom: 15px; display: inline-block;">
-      <% if (Object.keys(boards).length === 0) { %>
-        <option value="default">No boards found (Loads Default Sample)</option>
-      <% } else { %>
-        <% for (let id in boards) { %>
-          <option value="<%= id %>"><%= boards[id].title %></option>
-        <% } %>
-      <% } %>
+      <option value="default">Loading your saved boards...</option>
     </select>
     
     <br>
@@ -43,16 +37,61 @@
   </div>
 
   <script>
-    // Handles launching the dynamic game room
+    // --- FIXED: Automatically populate dropdown from localStorage on load ---
+    document.addEventListener("DOMContentLoaded", () => {
+      populateBoardDropdown();
+    });
+
+    function populateBoardDropdown() {
+      const selector = document.getElementById('board-selector');
+      selector.innerHTML = ""; // Clear loader text
+      
+      // Pull boards directly out of browser local memory
+      const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
+      const boardKeys = Object.keys(localBoards);
+
+      if (boardKeys.length === 0) {
+        const option = document.createElement('option');
+        option.value = "default";
+        option.innerText = "No boards found (Go create one!)";
+        selector.appendChild(option);
+        return;
+      }
+
+      // Add each saved board configuration directly to the dropdown list
+      boardKeys.forEach(id => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.innerText = localBoards[id].title;
+        selector.appendChild(option);
+      });
+    }
+
+    // --- FIXED: Handles extracting data from localStorage and launching a dynamic server game session ---
     async function launchSelectedGame() {
       const selectedId = document.getElementById('board-selector').value;
+      
+      if (selectedId === 'default') {
+        alert("Please create a board first before attempting to host a game room session!");
+        return;
+      }
+
+      const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
+      const selectedBoard = localBoards[selectedId];
+
+      // Pass the entire custom board object blueprint straight up to the Socket server state engine
       const response = await fetch('/api/create-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId: selectedId }) 
+        body: JSON.stringify({ boardData: selectedBoard }) 
       });
+      
       const data = await response.json();
-      window.location.href = `/host/${data.roomCode}`;
+      if (data.roomCode) {
+        window.location.href = `/host/${data.roomCode}`;
+      } else {
+        alert("Failed to initialize active game room session on server.");
+      }
     }
 
     // --- MODAL POPUP LOGIC ENGAGING ---
@@ -67,7 +106,7 @@
       const listContainer = document.getElementById('modal-board-list');
       listContainer.innerHTML = ""; // Wipe past links before loading fresh arrays
 
-      // Convert drop-down values into interactive modal selection layout buttons
+      // Convert dropdown values into interactive modal selection layout buttons
       const optionsArray = Array.from(selector.options);
       optionsArray.forEach((option) => {
         const listItem = document.createElement('li');

@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const fs = require('fs');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -16,38 +15,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// --- PERMANENT MEMORY STORAGE MANAGEMENT ---
-const STORAGE_DIR = process.env.RENDER ? '/data' : __dirname;
-const BOARDS_FILE = path.join(STORAGE_DIR, 'boards.json');
-
-
+// In-memory runtime cache object to manage live interactive game sessions
 let activeGames = {}; 
-
-function getSavedBoards() {
-  try {
-    // Ensure the data directory exists
-    if (process.env.RENDER && !fs.existsSync(STORAGE_DIR)) {
-      fs.mkdirSync(STORAGE_DIR, { recursive: true });
-    }
-
-    if (!fs.existsSync(BOARDS_FILE)) {
-      fs.writeFileSync(BOARDS_FILE, JSON.stringify({}));
-    }
-    const data = fs.readFileSync(BOARDS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("Error reading boards file, defaulting to empty database:", err);
-    return {};
-  }
-}
-
-function saveBoardsToDisk(boards) {
-  try {
-    fs.writeFileSync(BOARDS_FILE, JSON.stringify(boards, null, 2));
-  } catch (err) {
-    console.error("Error writing boards payload data directly down to local disk storage:", err);
-  }
-}
 
 function sendUpdatedPlayerData(roomCode) {
   if (activeGames[roomCode]) {
@@ -57,8 +26,8 @@ function sendUpdatedPlayerData(roomCode) {
 
 // --- APP PAGE ROUTING ENGINE ---
 app.get('/', (req, res) => {
-  const currentBoards = getSavedBoards();
-  res.render('index', { boards: currentBoards }); 
+  // FIXED: No longer reading dead server files. Simply rendering the page!
+  res.render('index'); 
 });
 
 app.get('/creator', (req, res) => {
@@ -80,37 +49,17 @@ app.get('/board/:roomCode', (req, res) => {
 // --- REST API SYSTEM ENDPOINTS ---
 app.post('/api/create-room', (req, res) => {
   const roomCode = 'JEP-' + Math.floor(1000 + Math.random() * 9000);
-  const boards = getSavedBoards();
-  const selectedBoard = boards[req.body.boardId] || { title: "Sample Default Edition", categories: [] };
+  
+  // Accept the complete custom board payload straight from the host's browser window
+  const selectedBoard = req.body.boardData || { title: "Sample Default Edition", categories: [] };
 
   activeGames[roomCode] = {
     boardData: selectedBoard, 
     buzzQueue: [],
     players: []
   };
+  
   res.json({ roomCode });
-});
-
-app.post('/api/save-board', (req, res) => {
-  const { title, categories } = req.body;
-  const boardId = title.toLowerCase().replace(/\s+/g, '-');
-  
-  const boards = getSavedBoards();
-  boards[boardId] = { id: boardId, title, categories };
-  
-  saveBoardsToDisk(boards); 
-  res.json({ success: true, boardId });
-});
-
-app.get('/api/get-board/:boardId', (req, res) => {
-  const boards = getSavedBoards();
-  const board = boards[req.params.boardId];
-  
-  if (board) {
-    res.json({ success: true, board });
-  } else {
-    res.status(404).json({ success: false, message: "Board profile query mismatch." });
-  }
 });
 
 app.get('/api/get-room-board/:roomCode', (req, res) => {
@@ -119,24 +68,6 @@ app.get('/api/get-room-board/:roomCode', (req, res) => {
     res.json({ success: true, boardData: game.boardData });
   } else {
     res.status(404).json({ success: false, message: "Active board configuration not found." });
-  }
-});
-
-app.delete('/api/delete-board/:boardId', (req, res) => {
-  try {
-    const boardId = req.params.boardId;
-    const boards = getSavedBoards();
-
-    if (boards[boardId]) {
-      delete boards[boardId];
-      saveBoardsToDisk(boards);
-      res.json({ success: true, message: "Board dropped successfully." });
-    } else {
-      res.status(404).json({ success: false, message: "Board file match not found on disk." });
-    }
-  } catch (err) {
-    console.error("Backend failed processing board profile entry drop action:", err);
-    res.status(500).json({ success: false, message: "Server encountered a block executing resource wipe." });
   }
 });
 
@@ -192,13 +123,10 @@ io.on('connection', (socket) => {
     const username = socket.username;
     
     if (roomCode && activeGames[roomCode]) {
-      // 1. Remove player from score rosters
       activeGames[roomCode].players = activeGames[roomCode].players.filter(p => p.id !== socket.id);
       
-      // 2. FIXED: Wipe their handle out of the queue array if they were holding a buzzer slot
       if (username) {
         activeGames[roomCode].buzzQueue = activeGames[roomCode].buzzQueue.filter(name => name !== username);
-        // Alert host and remaining players of the adjusted queue ordering
         io.to(roomCode).emit('buzzerLocked', activeGames[roomCode].buzzQueue);
       }
       
