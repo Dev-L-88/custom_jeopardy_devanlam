@@ -13,7 +13,10 @@ const io = new Server(server, {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use('/', express.static(path.join(__dirname, 'public'))); 
-app.use(express.json());
+
+// FIXED: Increased data limits to 50MB to accept custom boards with embedded image assets
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // In-memory runtime cache object to manage live interactive game sessions
 let activeGames = {}; 
