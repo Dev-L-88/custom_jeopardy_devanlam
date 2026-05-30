@@ -27,6 +27,9 @@
   margin: 40px auto;
   display: block;
   transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent; /* Removes the blue flashing square entirely */
+  -webkit-user-select: none;                /* Prevents accidental text selection / magnifying glass when tapping fast */
+  user-select: none;
 }
 
 .buzzer-btn:active:not(:disabled) {
@@ -38,4 +41,62 @@
   border-color: #888888;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* --- SYSTEM RESET FOR PERFECT VERTICAL LAYOUT --- */
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;  /* FIXED: Forces room code to stay ABOVE the form area */
+    justify-content: center; /* Centers everything vertically on the screen */
+    align-items: center;     /* Centers everything horizontally on the screen */
+    box-sizing: border-box;
+}
+
+/* --- RESPONSIVE CARD CONTAINER --- */
+#join-form-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    max-width: 420px; /* Prevents stretching too wide on desktop */
+    padding: 20px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* --- ORIGINAL TEXT AREA STYLING --- */
+#join-form-area h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+/* --- ORIGINAL INPUT FIELD STYLING & CENTERING --- */
+#join-form-area .input-field {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 15px auto; 
+    display: block;
+    box-sizing: border-box;
+}
+
+/* --- ORIGINAL BUTTON STYLING --- */
+#join-form-area .btn {
+    font-size: 20px; 
+    padding: 10px 30px;
+    width: 100%;
+    max-width: 320px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+/* --- ADJUSTMENT FOR VERY SMALL SCREENS --- */
+@media (max-width: 360px) {
+    #join-form-area .btn {
+        padding: 10px 15px; 
+    }
 }
