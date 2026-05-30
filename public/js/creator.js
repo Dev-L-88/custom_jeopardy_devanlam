@@ -13,6 +13,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+// --- NEW: HELPER TO OPEN THE LARGE CAPACITY INDEXEDDB DATABASE ---
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("JeopardyGameStorage", 1);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("boards")) {
+        db.createObjectStore("boards", { keyPath: "id" });
+      }
+    };
+    
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
 function renderEditorGrid() {
   const container = document.getElementById("matrix-builder");
   container.innerHTML = ""; 
@@ -78,63 +95,7 @@ function renderEditorGrid() {
   });
 }
 
-// --- Injecting Saved Data and Images back into inputs ---
-async function loadBoardDataForEditing(boardId) {
-  try {
-    const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
-    const board = localBoards[boardId];
-
-    if (!board) {
-      alert("Saved board configuration layout not found in browser storage.");
-      return;
-    }
-
-    const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
-    if (titleField) titleField.value = board.title;
-
-    board.categories.forEach((category, colIndex) => {
-      const catInput = document.querySelector(`.category-input[data-col="${colIndex}"]`);
-      if (catInput) catInput.value = category.name;
-
-      category.clues.forEach((clue, rowIndex) => {
-        const cardSelector = `.clue-input-card[data-col="${colIndex}"][data-row="${rowIndex}"]`;
-        const card = document.querySelector(cardSelector);
-        
-        if (card) {
-          card.querySelector('.clue-question-input').value = clue.question || "";
-          card.querySelector('.clue-answer-input').value = clue.answer || "";
-          
-          // Load Question Image
-          if (clue.image && clue.image.trim() !== "") {
-            const qContainer = card.querySelector('.question-img-container');
-            qContainer.querySelector('.clue-image-base64').value = clue.image;
-            qContainer.querySelector('.clue-image-preview').src = clue.image;
-            qContainer.querySelector('.image-preview-wrapper').style.display = "block";
-            qContainer.querySelector('.image-status-label').innerText = "Saved image loaded";
-            qContainer.querySelector('.image-status-label').style.color = "#ffff00";
-            qContainer.querySelector('.clear-image-btn').style.display = "inline-block";
-          }
-
-          // NEW: Load Answer Image
-          if (clue.answerImage && clue.answerImage.trim() !== "") {
-            const aContainer = card.querySelector('.answer-img-container');
-            aContainer.querySelector('.clue-answer-image-base64').value = clue.answerImage;
-            aContainer.querySelector('.clue-image-preview').src = clue.answerImage;
-            aContainer.querySelector('.image-preview-wrapper').style.display = "block";
-            aContainer.querySelector('.image-status-label').innerText = "Saved image loaded";
-            aContainer.querySelector('.image-status-label').style.color = "#ffff00";
-            aContainer.querySelector('.clear-image-btn').style.display = "inline-block";
-          }
-        }
-      });
-    });
-
-  } catch (error) {
-    console.error("Failed to parse board edit data payload:", error);
-  }
-}
-
-// --- UPDATED SAVE FUNCTION ---
+// --- UPGRADED: INDEXEDDB HIGH-CAPACITY SAVE ---
 async function saveCurrentBoard() {
   const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
   const title = titleField ? titleField.value.trim() : "";
@@ -164,17 +125,89 @@ async function saveCurrentBoard() {
       question: card.querySelector('.clue-question-input').value.trim(),
       answer: card.querySelector('.clue-answer-input').value.trim(),
       image: card.querySelector('.clue-image-base64').value,
-      answerImage: card.querySelector('.clue-answer-image-base64').value // NEW
+      answerImage: card.querySelector('.clue-answer-image-base64').value
     });
   });
 
-  const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
-  localBoards[boardId] = { id: boardId, title, categories };
-  localStorage.setItem("jeopardy_boards", JSON.stringify(localBoards));
+  const boardData = { id: boardId, title, categories };
 
-  alert(`Board "${title}" saved cleanly to your browser storage!`);
+  try {
+    const db = await openDB();
+    const transaction = db.transaction("boards", "readwrite");
+    const store = transaction.objectStore("boards");
+    
+    store.put(boardData); // Saves or overwrites seamlessly with massive storage allowance
+    
+    transaction.oncomplete = () => {
+      alert(`Board "${title}" saved cleanly to high-capacity storage!`);
+    };
+  } catch (error) {
+    console.error("IndexedDB Save Error:", error);
+    alert("Failed to save board layout due to a storage exception.");
+  }
 }
 
+// --- UPGRADED: INDEXEDDB LOAD ---
+async function loadBoardDataForEditing(boardId) {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction("boards", "readonly");
+    const store = transaction.objectStore("boards");
+    const request = store.get(boardId);
+
+    request.onsuccess = () => {
+      const board = request.result;
+      if (!board) {
+        alert("Saved board configuration layout not found.");
+        return;
+      }
+
+      const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
+      if (titleField) titleField.value = board.title;
+
+      board.categories.forEach((category, colIndex) => {
+        const catInput = document.querySelector(`.category-input[data-col="${colIndex}"]`);
+        if (catInput) catInput.value = category.name;
+
+        category.clues.forEach((clue, rowIndex) => {
+          const cardSelector = `.clue-input-card[data-col="${colIndex}"][data-row="${rowIndex}"]`;
+          const card = document.querySelector(cardSelector);
+          
+          if (card) {
+            card.querySelector('.clue-question-input').value = clue.question || "";
+            card.querySelector('.clue-answer-input').value = clue.answer || "";
+            
+            // Question image load
+            if (clue.image && clue.image.trim() !== "") {
+              const qContainer = card.querySelector('.question-img-container');
+              qContainer.querySelector('.clue-image-base64').value = clue.image;
+              qContainer.querySelector('.clue-image-preview').src = clue.image;
+              qContainer.querySelector('.image-preview-wrapper').style.display = "block";
+              qContainer.querySelector('.image-status-label').innerText = "Saved image loaded";
+              qContainer.querySelector('.image-status-label').style.color = "#ffff00";
+              qContainer.querySelector('.clear-image-btn').style.display = "inline-block";
+            }
+
+            // Answer image load
+            if (clue.answerImage && clue.answerImage.trim() !== "") {
+              const aContainer = card.querySelector('.answer-img-container');
+              aContainer.querySelector('.clue-answer-image-base64').value = clue.answerImage;
+              aContainer.querySelector('.clue-image-preview').src = clue.answerImage;
+              aContainer.querySelector('.image-preview-wrapper').style.display = "block";
+              aContainer.querySelector('.image-status-label').innerText = "Saved image loaded";
+              aContainer.querySelector('.image-status-label').style.color = "#ffff00";
+              aContainer.querySelector('.clear-image-btn').style.display = "inline-block";
+            }
+          }
+        });
+      });
+    };
+  } catch (error) {
+    console.error("Failed to load board from IndexedDB:", error);
+  }
+}
+
+// --- MODAL TOGGLE WINDOW CONTROLS ---
 function openDeleteModal() {
   const urlParams = new URLSearchParams(window.location.search);
   let boardId = urlParams.get('boardId');
@@ -191,6 +224,7 @@ function closeDeleteModal() {
   document.getElementById('delete-modal').style.display = 'none';
 }
 
+// --- UPGRADED: INDEXEDDB DELETE ---
 async function executePermanentDelete() {
   const urlParams = new URLSearchParams(window.location.search);
   let boardId = urlParams.get('boardId');
@@ -203,19 +237,23 @@ async function executePermanentDelete() {
 
   closeDeleteModal();
 
-  const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
-  
-  if (localBoards[boardId]) {
-    delete localBoards[boardId];
-    localStorage.setItem("jeopardy_boards", JSON.stringify(localBoards));
+  try {
+    const db = await openDB();
+    const transaction = db.transaction("boards", "readwrite");
+    const store = transaction.objectStore("boards");
     
-    alert("Board configuration deleted successfully!");
-    window.location.href = "/";
-  } else {
-    alert("Could not complete deletion: Board profile match not found in storage.");
+    store.delete(boardId);
+    
+    transaction.oncomplete = () => {
+      alert("Board configuration deleted successfully!");
+      window.location.href = "/";
+    };
+  } catch (error) {
+    alert("Could not complete deletion due to a database access issue.");
   }
 }
 
+// Automatically convert image payload files into manageable text string blocks
 function previewSelectedImage(inputElement) {
   const file = inputElement.files[0];
   const container = inputElement.closest('.image-uploader-container');

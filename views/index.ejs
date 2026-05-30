@@ -37,37 +37,65 @@
   </div>
 
   <script>
-    // --- FIXED: Automatically populate dropdown from localStorage on load ---
+    // --- NEW: HELPER TO OPEN THE EXACT SAME HIGH-CAPACITY DATABASE ---
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("JeopardyGameStorage", 1);
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains("boards")) {
+            db.createObjectStore("boards", { keyPath: "id" });
+          }
+        };
+        
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+
+    // --- AUTOMATICALLY INJECT SAVED DATA GROUPS ON WEB LOAD ---
     document.addEventListener("DOMContentLoaded", () => {
       populateBoardDropdown();
     });
 
-    function populateBoardDropdown() {
+    // --- UPGRADED: EXTRACT BOARDS FROM INDEXEDDB FOR DROPDOWN ---
+    async function populateBoardDropdown() {
       const selector = document.getElementById('board-selector');
       selector.innerHTML = ""; // Clear loader text
       
-      // Pull boards directly out of browser local memory
-      const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
-      const boardKeys = Object.keys(localBoards);
+      try {
+        const db = await openDB();
+        const transaction = db.transaction("boards", "readonly");
+        const store = transaction.objectStore("boards");
+        const request = store.getAll(); // Fetch every saved board layout map profile
 
-      if (boardKeys.length === 0) {
-        const option = document.createElement('option');
-        option.value = "default";
-        option.innerText = "No boards found (Go create one!)";
-        selector.appendChild(option);
-        return;
+        request.onsuccess = () => {
+          const savedBoards = request.result;
+
+          if (!savedBoards || savedBoards.length === 0) {
+            const option = document.createElement('option');
+            option.value = "default";
+            option.innerText = "No boards found (Go create one!)";
+            selector.appendChild(option);
+            return;
+          }
+
+          // Dynamic rendering option block maps loops
+          savedBoards.forEach(board => {
+            const option = document.createElement('option');
+            option.value = board.id;
+            option.innerText = board.title;
+            selector.appendChild(option);
+          });
+        };
+      } catch (error) {
+        console.error("IndexedDB Fetch Error (Dropdown):", error);
+        selector.innerHTML = `<option value="default">Error loading high-capacity storage</option>`;
       }
-
-      // Add each saved board configuration directly to the dropdown list
-      boardKeys.forEach(id => {
-        const option = document.createElement('option');
-        option.value = id;
-        option.innerText = localBoards[id].title;
-        selector.appendChild(option);
-      });
     }
 
-    // --- FIXED: Handles extracting data from localStorage and launching a dynamic server game session ---
+    // --- UPGRADED: PULL CHOSEN BLUEPRINT OUT OF DATABASE TO TRANSMIT TO BACKEND ENGINE ---
     async function launchSelectedGame() {
       const selectedId = document.getElementById('board-selector').value;
       
@@ -76,21 +104,37 @@
         return;
       }
 
-      const localBoards = JSON.parse(localStorage.getItem("jeopardy_boards") || "{}");
-      const selectedBoard = localBoards[selectedId];
+      try {
+        const db = await openDB();
+        const transaction = db.transaction("boards", "readonly");
+        const store = transaction.objectStore("boards");
+        const request = store.get(selectedId); // Retrieve targeted image data array strings natively
 
-      // Pass the entire custom board object blueprint straight up to the Socket server state engine
-      const response = await fetch('/api/create-room', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardData: selectedBoard }) 
-      });
-      
-      const data = await response.json();
-      if (data.roomCode) {
-        window.location.href = `/host/${data.roomCode}`;
-      } else {
-        alert("Failed to initialize active game room session on server.");
+        request.onsuccess = async () => {
+          const selectedBoard = request.result;
+
+          if (!selectedBoard) {
+            alert("Could not load the chosen board data properties.");
+            return;
+          }
+
+          // Pass the entire custom board object blueprint straight up to the Socket server state engine
+          const response = await fetch('/api/create-room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ boardData: selectedBoard }) 
+          });
+          
+          const data = await response.json();
+          if (data.roomCode) {
+            window.location.href = `/host/${data.roomCode}`;
+          } else {
+            alert("Failed to initialize active game room session on server.");
+          }
+        };
+      } catch (error) {
+        console.error("Failed to extract board data mapping string for transmission:", error);
+        alert("A storage exception error popped up while hosting this match.");
       }
     }
 
