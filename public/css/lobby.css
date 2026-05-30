@@ -1,107 +1,128 @@
-body{
-  overflow-y: hidden;
-  overflow-x: hidden;
-}
-
-/* Room Status Display (Host & Player Feedback text) */
-#buzzer-display, #status {
-  font-size: 32px;
-  margin: 20px;
-  min-height: 50px;
-  color: #00f5ff;
-  font-weight: bold;
-}
-
-#player-list {
-  margin-top: 20px;
-  font-size: 20px;
-}
-
-/* Giant Real-Time Buzzer Button */
-.buzzer-btn {
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  background-color: #d9534f;
-  color: #ffffff;
-  font-size: 32px;
-  font-weight: bold;
-  border: 10px solid #ffffff;
-  cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-  margin: 40px auto;
-  display: block;
-  transition: transform 0.1s ease;
-  -webkit-tap-highlight-color: transparent; /* Removes the blue flashing square entirely */
-  -webkit-user-select: none;                /* Prevents accidental text selection / magnifying glass when tapping fast */
-  user-select: none;
-}
-
-.buzzer-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.buzzer-btn:disabled {
-  background-color: #555555;
-  border-color: #888888;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* --- SYSTEM RESET FOR PERFECT VERTICAL LAYOUT --- */
+/* --- HYPER-COLOSSAL IMMERSIVE SYSTEM RESET --- */
 body {
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
     display: flex;
-    flex-direction: column;  /* FIXED: Forces room code to stay ABOVE the form area */
-    justify-content: center; /* Centers everything vertically on the screen */
-    align-items: center;     /* Centers everything horizontally on the screen */
+    flex-direction: column;  
+    /* FIXED: Changed space-evenly to center to stop the massive vertical layout separation */
+    justify-content: center; 
+    align-items: center;     
     box-sizing: border-box;
+    overflow: hidden;        
 }
 
-/* --- RESPONSIVE CARD CONTAINER --- */
+/* --- MONSTER TITLES --- */
+#buzzer-display, #status {
+    font-size: clamp(38px, 9vh, 58px); 
+    /* FIXED: Using a controlled, small fluid margin to bring the card right up below it */
+    margin-top: 0;
+    margin-bottom: 2vh; 
+    margin-left: 1%;
+    margin-right: 1%;
+    min-height: auto; /* Removed the min-height block that was pushing things down */
+    color: #00f5ff;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.0;
+}
+
+#player-list {
+    margin-top: 1vh;
+    font-size: clamp(26px, 4.5vh, 34px); 
+    text-align: center;
+    width: 98%;
+}
+
+/* --- THE ULTIMATE HYPER-BUZZER --- */
+.buzzer-btn {
+    width: 96vw;
+    height: 96vw;
+    max-width: 440px;  
+    max-height: 440px; 
+    min-width: 320px;  
+    min-height: 320px; 
+    
+    border-radius: 50%;
+    background-color: #d9534f;
+    color: #ffffff;
+    
+    font-size: clamp(46px, 12vw, 68px); 
+    font-weight: bold;
+    border: 24px solid #ffffff; 
+    cursor: pointer;
+    box-shadow: 0 2.5vh 5vh rgba(0, 0, 0, 0.7);
+    
+    margin-top: 1vh;
+    margin-bottom: 1vh;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    transition: transform 0.05s ease; 
+    
+    -webkit-tap-highlight-color: transparent; 
+    -webkit-user-select: none;                
+    user-select: none;
+    touch-action: manipulation; 
+}
+
+.buzzer-btn:active:not(:disabled) {
+    transform: scale(0.88); 
+}
+
+.buzzer-btn:disabled {
+    background-color: #222222;
+    border-color: #444444;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* --- HYPER-EXPANDED JOIN CARD AREA --- */
 #join-form-area {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 90%;
-    max-width: 420px; /* Prevents stretching too wide on desktop */
-    padding: 20px;
+    width: 98%;       
+    max-width: 620px; 
+    padding: 2% 2%;   /* FIXED: Tightened vertical inside padding to reduce card footprint */
     text-align: center;
     box-sizing: border-box;
 }
 
-/* --- ORIGINAL TEXT AREA STYLING --- */
 #join-form-area h3 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 2vh;
+    font-size: clamp(28px, 6vw, 38px); 
+    line-height: 1.1;
 }
 
-/* --- ORIGINAL INPUT FIELD STYLING & CENTERING --- */
+/* --- MONOLITHIC INPUT FIELD --- */
 #join-form-area .input-field {
     width: 100%;
-    max-width: 320px;
-    margin: 0 auto 15px auto; 
+    max-width: 520px;
+    height: 10vh;      
+    min-height: 74px;  
+    margin-top: 0;
+    margin-bottom: 2vh;
+    margin-left: auto;
+    margin-right: auto;
     display: block;
     box-sizing: border-box;
+    font-size: clamp(26px, 3.5vh, 32px); 
+    text-align: center;
 }
 
-/* --- ORIGINAL BUTTON STYLING --- */
+/* --- MONOLITHIC SUBMIT BUTTON --- */
 #join-form-area .btn {
-    font-size: 20px; 
-    padding: 10px 30px;
+    font-size: clamp(28px, 4vh, 34px); 
+    padding-top: 2.5vh;
+    padding-bottom: 2.5vh;
+    padding-left: 15%;
+    padding-right: 15%;
     width: 100%;
-    max-width: 320px;
+    max-width: 520px;
     box-sizing: border-box;
     cursor: pointer;
-}
-
-/* --- ADJUSTMENT FOR VERY SMALL SCREENS --- */
-@media (max-width: 360px) {
-    #join-form-area .btn {
-        padding: 10px 15px; 
-    }
 }
