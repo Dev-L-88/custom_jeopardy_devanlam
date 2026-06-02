@@ -232,7 +232,7 @@ async function saveCurrentBoard() {
     const request = store.put(boardData);
     
     request.onsuccess = () => {
-      alert(`Board "${title}" saved cleanly with custom dimensions!`);
+      alert(`Board "${title}" saved to local storage!`);
     };
 
     transaction.onerror = (err) => {
