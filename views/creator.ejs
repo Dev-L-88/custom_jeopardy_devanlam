@@ -10,14 +10,43 @@
   <h1>Board Creator Workspace</h1>
   <p>Build your grid configuration below. (Tip: Use the save button to register your setup!)</p>
   
-  <div id="editor-container">
-    <div class="creator-controls">
-      <input type="text" id="board-title" placeholder="Enter Board Title (e.g., Birthday Edition)" class="input-field">
-      <button onclick="saveCurrentBoard()" class="btn btn-cyan">Save Board Configuration</button>
-      <button onclick="openDeleteModal()" class="btn btn-danger">Delete Board</button>
+  <!-- FIXED: Container now expands dynamically up to 95% width and stays perfectly centered -->
+  <div id="editor-container" style="width: 95%; max-width: 1800px; margin: 0 auto;">
+    <div class="creator-controls" style="display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%;">
+      <!-- TOP CONTROL ROW: TITLE AND ACTIONS -->
+      <div style="display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%;">
+        <input type="text" id="board-title" placeholder="Enter Board Title (e.g., Birthday Edition)" class="input-field">
+        <button onclick="saveCurrentBoard()" class="btn btn-cyan">Save Board Configuration</button>
+        <button onclick="openDeleteModal()" class="btn btn-danger">Delete Board</button>
+      </div>
+
+      <!-- BOTTOM CONTROL ROW: SIDE-BY-SIDE DIMENSION ADJUSTERS -->
+      <div class="grid-controls-container" style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap; margin-top: 5px; width: 100%;">
+        
+        <!-- COLUMNS SECTION -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #00f5ff; font-weight: bold; font-size: 14px; letter-spacing: 1px;">COLUMNS:</span>
+          <button type="button" class="btn" onclick="adjustColumns(-1)" style="padding: 2px 10px; margin: 0; font-weight: bold; background-color: #ffff00; color: #000; border-color: #ffff00;">-</button>
+          <span id="col-count-display" style="color: #fff; font-weight: bold; font-size: 16px; min-width: 20px; display: inline-block; text-align: center;">5</span>
+          <button type="button" class="btn" onclick="adjustColumns(1)" style="padding: 2px 10px; margin: 0; font-weight: bold; background-color: #ffff00; color: #000; border-color: #ffff00;">+</button>
+        </div>
+
+        <!-- SEPARATOR PIPE -->
+        <div style="border-left: 2px solid #222846; height: 20px;"></div>
+
+        <!-- ROWS SECTION -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #00f5ff; font-weight: bold; font-size: 14px; letter-spacing: 1px;">ROWS:</span>
+          <button type="button" class="btn" onclick="adjustRows(-1)" style="padding: 2px 10px; margin: 0; font-weight: bold; background-color: #ffff00; color: #000; border-color: #ffff00;">-</button>
+          <span id="row-count-display" style="color: #fff; font-weight: bold; font-size: 16px; min-width: 20px; display: inline-block; text-align: center;">5</span>
+          <button type="button" class="btn" onclick="adjustRows(1)" style="padding: 2px 10px; margin: 0; font-weight: bold; background-color: #ffff00; color: #000; border-color: #ffff00;">+</button>
+        </div>
+
+      </div>
     </div>
     
-    <div id="matrix-builder" class="jeopardy-grid">
+    <!-- FIXED: Added width: 100% to ensure grid utilizes all expanded container space seamlessly -->
+    <div id="matrix-builder" class="jeopardy-grid" style="width: 100%; margin-top: 20px;">
       Loading grid cells...
     </div>
   </div>
@@ -34,7 +63,9 @@
     </div>
   </div>
 
-  <a href="/" class="btn btn-danger" style="margin-top: 20px; display: inline-block;">Back to Hub</a>
+  <div style="text-align: center; width: 100%;">
+    <a href="/" class="btn btn-danger" style="margin-top: 20px; display: inline-block;">Back to Hub</a>
+  </div>
   <script src="/js/creator.js"></script>
 </body>
 </html>

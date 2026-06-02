@@ -11,7 +11,7 @@
   <h1 id="game-title" style="margin: 5px 0;">Loading Jeopardy Game...</h1>
   <h2 style="font-size: 16px; margin: 0 0 10px 0;">Room Code: <span style="color: #00f5ff;"><%= roomCode %></span></h2>
 
-  <div id="game-board-container" class="board-grid"></div>
+  <div id="game-board-container" class="board-grid" style="display: grid; width: 100%; gap: 15px;"></div>
 
   <div class="scoreboard-section">
     <h3 class="scoreboard-title">Active Competitors Scoreboard</h3>
@@ -43,23 +43,18 @@
     const roomCode = "<%= roomCode %>";
     let activeClueData = null;
 
-    // --- SOCKET REAL-TIME LISTENER CONNECTIONS ---
     const socket = io({ transports: ['websocket'] });
 
-    // Instantly join the designated socket broadcast channel matching our room code
     socket.emit('joinRoom', { roomCode: roomCode, username: "GAME_BOARD_DISPLAY" });
 
-    // Handle incoming data payload transmissions from the server engine
     socket.on('playerDataUpdate', (playersArray) => {
       updateLiveScores(playersArray);
     });
 
-    // --- SHOW WHO BUZZED IN DIRECTLY ON THE FULLSCREEN OVERLAY ---
     socket.on('buzzerLocked', (buzzQueue) => {
       const leadingBuzzerName = buzzQueue[0];
       console.log(`Live active room buzz leader: ${leadingBuzzerName}`);
 
-      // If a clue is currently open, dynamically add a banner showing who buzzed in first!
       const overlayPrompt = document.getElementById('active-prompt-text');
       const existingIndicator = document.getElementById('buzz-indicator');
       
@@ -70,14 +65,12 @@
         indicator.style.color = '#ffff00';
         indicator.style.marginTop = '20px';
         indicator.style.fontWeight = 'bold';
-        indicator.innerText = `🔔 ${leadingBuzzerName} BUZZED IN FIRST!`;
+        indicator.innerText = `${leadingBuzzerName} BUZZED IN FIRST!`;
         
-        // Insert it neatly right below the question text
         overlayPrompt.after(indicator);
       }
     });
 
-    // Clean up the buzzer banner when the host resets the buzzers
     socket.on('buzzerResetSignal', () => {
       const existingIndicator = document.getElementById('buzz-indicator');
       if (existingIndicator) {
@@ -101,30 +94,45 @@
       }
     });
 
+    // --- FIXED: FULLY DYNAMIC GAME BOARD GENERATION RULES ---
     function renderLiveBoard(boardData) {
       document.getElementById('game-title').innerText = boardData.title || "Jeopardy Match";
       const container = document.getElementById("game-board-container");
+      if (!container) return;
       container.innerHTML = "";
 
-      // 1. Render Category Titles (Top Row)
+      // Safely read saved custom sizing parameters with classic 5x5 structures as fallbacks
+      const colsCount = boardData.colsCount || (boardData.categories ? boardData.categories.length : 5);
+      const rowsCount = boardData.rowsCount || (boardData.categories && boardData.categories[0] && boardData.categories[0].clues ? boardData.categories[0].clues.length : 5);
+
+      // Apply CSS template track layout based on actual column length
+      container.style.gridTemplateColumns = `repeat(${colsCount}, 1fr)`;
+
+      // 1. Render Dynamic Category Titles
       boardData.categories.forEach(cat => {
         const header = document.createElement("div");
         header.className = "board-header";
-        header.innerText = cat.name;
+        header.innerText = cat.name || "Category";
         container.appendChild(header);
       });
 
-      // 2. Render clues by Row priority ($200s, then $400s...)
-      const totalRows = 5;
-      for (let row = 0; row < totalRows; row++) {
-        for (let col = 0; col < 5; col++) {
-          const clue = boardData.categories[col].clues[row];
+      // 2. Render clues dynamically matching row data tracking values
+      for (let row = 0; row < rowsCount; row++) {
+        for (let col = 0; col < colsCount; col++) {
+          const targetCategory = boardData.categories[col];
+          const clue = (targetCategory && targetCategory.clues) ? targetCategory.clues[row] : null;
+          
           const clueBox = document.createElement("div");
-          boxText = clue ? `$${clue.value}` : "---";
           clueBox.className = "board-clue";
+          
+          // Display value correctly if edited (e.g. $100 instead of $200)
+          let boxText = "---";
+          if (clue) {
+            boxText = clue.value !== undefined ? `$${clue.value}` : `$${(row + 1) * 200}`;
+          }
           clueBox.innerText = boxText;
 
-          if (clue) {
+          if (clue && (clue.question || clue.answer)) {
             clueBox.onclick = () => {
               if (clueBox.classList.contains('clicked')) return;
               clueBox.classList.add('clicked');
@@ -139,7 +147,6 @@
       }
     }
 
-    // --- RENDER SCOREBOARD CARD MODULES ---
     function updateLiveScores(players) {
       const wrapper = document.getElementById('scoreboard-players-wrapper');
       wrapper.innerHTML = ""; 
@@ -162,7 +169,6 @@
       });
     }
 
-    // --- INTERACTIVE MODAL CONTROLS ---
     function launchClueOverlay(clue) {
       activeClueData = clue;
       
@@ -170,18 +176,15 @@
       const imgWrapper = document.getElementById('overlay-image-wrapper');
       const displayImg = document.getElementById('overlay-display-img');
       
-      // Clear old text strings
       promptTextElement.innerHTML = "";
       
-      // Append standard question text
       const questionText = document.createElement('div');
       questionText.innerText = clue.question || "No prompt written.";
       promptTextElement.appendChild(questionText);
       
-      // Handle the image states
       if (clue.image && clue.image.trim() !== "") {
         displayImg.src = clue.image;
-        displayImg.style.borderColor = "#ffffff"; // Reset border to default white
+        displayImg.style.borderColor = "#ffffff"; 
         imgWrapper.style.display = 'block';
       } else {
         displayImg.src = "";
@@ -202,13 +205,12 @@
       document.getElementById('reveal-answer-btn').style.display = 'none';
       document.getElementById('active-answer-text').style.display = 'block';
 
-      // Check if an alternative answer image was attached to this profile card
       if (activeClueData && activeClueData.answerImage && activeClueData.answerImage.trim() !== "") {
         const imgWrapper = document.getElementById('overlay-image-wrapper');
         const displayImg = document.getElementById('overlay-display-img');
 
         displayImg.src = activeClueData.answerImage;
-        displayImg.style.borderColor = "#ffff00"; // Accent gold border change to highlight the reveal!
+        displayImg.style.borderColor = "#ffff00"; 
         imgWrapper.style.display = 'block';
       }
     }
