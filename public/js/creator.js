@@ -104,7 +104,13 @@ async function saveCurrentBoard() {
     return alert("Please give your board a title before saving!");
   }
 
-  const boardId = title.toLowerCase().replace(/\s+/g, '-');
+  const cleanTitle = title.replace(/[^a-zA-Z0-9\s]/g, "");
+  const boardId = cleanTitle.toLowerCase().trim().replace(/\s+/g, '-');
+
+  if (!boardId) {
+    return alert("Please include at least one number or character in your board title.");
+  }
+
   const categories = [];
   
   for (let col = 0; col < 5; col++) {
@@ -232,7 +238,8 @@ async function executePermanentDelete() {
   if (!boardId) {
     const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
     const title = titleField ? titleField.value.trim() : "";
-    boardId = title.toLowerCase().replace(/\s+/g, '-');
+    const cleanTitle = title.replace(/[^a-zA-Z0-9\s]/g, "");
+    boardId = cleanTitle.toLowerCase().trim().replace(/\s+/g, '-');
   }
 
   closeDeleteModal();
