@@ -31,20 +31,16 @@
     const roomCode = "<%= roomCode %>";
     const socket = io({ transports: ['websocket'] });
 
-    // FIXED: Formally introduce this client instance profile to the room network
     socket.emit('joinRoom', { roomCode: roomCode, username: "HOST_CONSOLE" });
 
-    // Generate link dynamically based on browser location
     document.getElementById('join-link').innerText = `${window.location.origin}/join/${roomCode}`;
 
-    // --- LISTEN FOR LIVE PLAYER JOIN/LEAVE AND ADJUST SCORES ---
     socket.on('playerDataUpdate', (playersArray) => {
       const playerListContainer = document.getElementById('player-list');
       if (!playerListContainer) return;
 
-      playerListContainer.innerHTML = ""; // Wipe stale frames
+      playerListContainer.innerHTML = ""; 
 
-      // Filter out system displays AND our specific console string
       const actualPlayers = playersArray.filter(p => p.username !== "GAME_BOARD_DISPLAY" && p.username !== "HOST_CONSOLE");
 
       if (actualPlayers.length === 0) {
@@ -52,7 +48,6 @@
         return;
       }
 
-      // Append live competitor modules flanked by score adjuster hooks
       actualPlayers.forEach(player => {
         const li = document.createElement('li');
         li.style.listStyle = "none";
@@ -78,7 +73,6 @@
       });
     });
 
-    // Send score update transmissions up to the server engine
     function changeScore(playerId, changeAmount) {
       socket.emit('updatePlayerScore', {
         roomCode: roomCode,
@@ -87,16 +81,13 @@
       });
     }
 
-    // --- BUZZER CONTROL EVENT PIPELINES ---
     socket.on('buzzerLocked', (buzzQueue) => {
       const display = document.getElementById('buzzer-display');
       if (!display || !buzzQueue || buzzQueue.length === 0) return;
       
-      // Grab the person at position index 0 of the array timeline
       const winner = buzzQueue[0];
       
       if (buzzQueue.length > 1) {
-        // FIXED: Changed text color to a lighter gray accent (#b0b5c6) so it stands out against dark layouts
         display.innerHTML = `
           ${winner} BUZZED IN FIRST!<br>
           <span style="font-size: 18px; color: #b0b5c6; font-style: italic;">
@@ -106,7 +97,7 @@
         display.innerText = `${winner} BUZZED IN FIRST!`;
       }
       
-      display.style.color = '#ffff00'; // Flash gold text when active
+      display.style.color = '#ffff00'; 
     });
 
     socket.on('buzzerResetSignal', () => {

@@ -94,21 +94,17 @@
       }
     });
 
-    // --- FIXED: FULLY DYNAMIC GAME BOARD GENERATION RULES ---
     function renderLiveBoard(boardData) {
       document.getElementById('game-title').innerText = boardData.title || "Jeopardy Match";
       const container = document.getElementById("game-board-container");
       if (!container) return;
       container.innerHTML = "";
 
-      // Safely read saved custom sizing parameters with classic 5x5 structures as fallbacks
       const colsCount = boardData.colsCount || (boardData.categories ? boardData.categories.length : 5);
       const rowsCount = boardData.rowsCount || (boardData.categories && boardData.categories[0] && boardData.categories[0].clues ? boardData.categories[0].clues.length : 5);
 
-      // Apply CSS template track layout based on actual column length
       container.style.gridTemplateColumns = `repeat(${colsCount}, 1fr)`;
 
-      // 1. Render Dynamic Category Titles
       boardData.categories.forEach(cat => {
         const header = document.createElement("div");
         header.className = "board-header";
@@ -116,7 +112,6 @@
         container.appendChild(header);
       });
 
-      // 2. Render clues dynamically matching row data tracking values
       for (let row = 0; row < rowsCount; row++) {
         for (let col = 0; col < colsCount; col++) {
           const targetCategory = boardData.categories[col];
@@ -125,7 +120,6 @@
           const clueBox = document.createElement("div");
           clueBox.className = "board-clue";
           
-          // Display value correctly if edited (e.g. $100 instead of $200)
           let boxText = "---";
           if (clue) {
             boxText = clue.value !== undefined ? `$${clue.value}` : `$${(row + 1) * 200}`;

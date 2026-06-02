@@ -1,4 +1,4 @@
-// --- NEW: GLOBAL DATABASE INITIALIZATION WRAPPER ---
+
 function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("JeopardyGameStorage", 1);
@@ -15,7 +15,6 @@ function openDB() {
   });
 }
 
-// Track the current dynamic state of the layout structure
 let currentCols = 5;
 let currentRows = 5;
 let defaultRowValues = [200, 400, 600, 800, 1000];
@@ -27,12 +26,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (boardId) {
     await loadBoardDataForEditing(boardId);
   } else {
-    // Render default baseline grid if building fresh
     renderEditorGrid();
   }
 });
 
-// --- FIXED: CAPTURES DATA CLEANLY WITH NO EMPTY STORAGE SLOTS ---
 function captureCurrentDOMState() {
   const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
   const title = titleField ? titleField.value.trim() : "";
@@ -42,7 +39,6 @@ function captureCurrentDOMState() {
     categories: []
   };
 
-  // Build a perfectly solid, non-sparse structure column by column, row by row
   for (let col = 0; col < currentCols; col++) {
     const input = document.querySelector(`.category-input[data-col="${col}"]`);
     
@@ -84,22 +80,21 @@ function captureCurrentDOMState() {
   return state;
 }
 
-// --- DYNAMIC MATRIX RENDER ---
 function renderEditorGrid(existingState = null) {
   const container = document.getElementById("matrix-builder");
   if (!container) return;
   container.innerHTML = ""; 
 
-  // Update DOM control displays
+
   const colDisplay = document.getElementById("col-count-display");
   const rowDisplay = document.getElementById("row-count-display");
   if (colDisplay) colDisplay.innerText = currentCols;
   if (rowDisplay) rowDisplay.innerText = currentRows;
 
-  // Set up CSS grid columns dynamically based on counter variable
+
   container.style.gridTemplateColumns = `repeat(${currentCols}, 1fr)`;
 
-  // 1. Generate Dynamic Headers
+
   for (let col = 0; col < currentCols; col++) {
     const headerDiv = document.createElement("div");
     headerDiv.className = "category-header";
@@ -115,7 +110,7 @@ function renderEditorGrid(existingState = null) {
     container.appendChild(headerDiv);
   }
 
-  // 2. Generate Clue Grid Cards
+
   for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
     for (let colIndex = 0; colIndex < currentCols; colIndex++) {
       const cardDiv = document.createElement("div");
@@ -127,7 +122,7 @@ function renderEditorGrid(existingState = null) {
       let qImg = "";
       let aImg = "";
 
-      // Hydrate cell data safely if previous structural states match up
+
       if (existingState && existingState.categories && existingState.categories[colIndex] && existingState.categories[colIndex].clues && existingState.categories[colIndex].clues[rowIndex]) {
         const targetClue = existingState.categories[colIndex].clues[rowIndex];
         cellValue = targetClue.value !== undefined ? targetClue.value : cellValue;
@@ -184,7 +179,6 @@ function renderEditorGrid(existingState = null) {
   }
 }
 
-// --- BUTTON TRIGGERS FOR ROW/COL ADJUSTMENTS ---
 function adjustColumns(amount) {
   const nextCols = currentCols + amount;
   if (nextCols < 1 || nextCols > 9) return alert("Keep board configurations within 1 to 9 columns.");
@@ -203,7 +197,6 @@ function adjustRows(amount) {
   renderEditorGrid(savedState);
 }
 
-// --- FIXED: SAVE ACTION WITH PROPER CONTEXT TRANSACTIONS ---
 async function saveCurrentBoard() {
   const titleField = document.getElementById("board-title") || document.getElementById("board-title-input");
   const title = titleField ? titleField.value.trim() : "";
@@ -245,7 +238,7 @@ async function saveCurrentBoard() {
   }
 }
 
-// --- RESTORES CUSTOM MATRIX SIZES ---
+
 async function loadBoardDataForEditing(boardId) {
   try {
     const db = await openDB();
@@ -270,7 +263,6 @@ async function loadBoardDataForEditing(boardId) {
   }
 }
 
-// --- IMAGE SELECTION AND PREVIEW CONTROLLER UTILITIES ---
 function previewSelectedImage(inputElement) {
   const file = inputElement.files[0];
   if (!file) return;
@@ -311,7 +303,6 @@ function clearAttachedImage(buttonElement) {
   buttonElement.style.display = 'none';
 }
 
-// --- DELETE FUNCTIONALITY WRAPPERS ---
 function openDeleteModal() {
   const modal = document.getElementById('delete-modal');
   if (modal) modal.style.display = 'flex';

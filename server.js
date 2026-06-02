@@ -9,16 +9,13 @@ const io = new Server(server, {
   transports: ['websocket']
 });
 
-// --- MIDDLEWARE & ENGINE CONFIGURATION ---
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use('/', express.static(path.join(__dirname, 'public'))); 
 
-// FIXED: Increased data limits to 50MB to accept custom boards with embedded image assets
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// In-memory runtime cache object to manage live interactive game sessions
 let activeGames = {}; 
 
 function sendUpdatedPlayerData(roomCode) {
@@ -27,7 +24,6 @@ function sendUpdatedPlayerData(roomCode) {
   }
 }
 
-// --- APP PAGE ROUTING ENGINE ---
 app.get('/', (req, res) => {
   res.render('index'); 
 });
@@ -48,11 +44,9 @@ app.get('/board/:roomCode', (req, res) => {
   res.render('board', { roomCode: req.params.roomCode });
 });
 
-// --- REST API SYSTEM ENDPOINTS ---
 app.post('/api/create-room', (req, res) => {
   const roomCode = 'JEP-' + Math.floor(1000 + Math.random() * 9000);
   
-  // Accept the complete custom board payload straight from the host's browser window
   const selectedBoard = req.body.boardData || { title: "Sample Default Edition", categories: [] };
 
   activeGames[roomCode] = {
@@ -73,7 +67,6 @@ app.get('/api/get-room-board/:roomCode', (req, res) => {
   }
 });
 
-// --- SOCKET.IO REAL-TIME INTERACTION ENGINE ---
 io.on('connection', (socket) => {
   console.log(`Connection established pipeline index handle: ${socket.id}`);
 

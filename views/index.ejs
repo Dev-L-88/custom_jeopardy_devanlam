@@ -37,7 +37,6 @@
   </div>
 
   <script>
-    // --- NEW: HELPER TO OPEN THE EXACT SAME HIGH-CAPACITY DATABASE ---
     function openDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open("JeopardyGameStorage", 1);
@@ -54,21 +53,19 @@
       });
     }
 
-    // --- AUTOMATICALLY INJECT SAVED DATA GROUPS ON WEB LOAD ---
     document.addEventListener("DOMContentLoaded", () => {
       populateBoardDropdown();
     });
 
-    // --- UPGRADED: EXTRACT BOARDS FROM INDEXEDDB FOR DROPDOWN ---
     async function populateBoardDropdown() {
       const selector = document.getElementById('board-selector');
-      selector.innerHTML = ""; // Clear loader text
+      selector.innerHTML = ""; 
       
       try {
         const db = await openDB();
         const transaction = db.transaction("boards", "readonly");
         const store = transaction.objectStore("boards");
-        const request = store.getAll(); // Fetch every saved board layout map profile
+        const request = store.getAll(); 
 
         request.onsuccess = () => {
           const savedBoards = request.result;
@@ -81,7 +78,6 @@
             return;
           }
 
-          // Dynamic rendering option block maps loops
           savedBoards.forEach(board => {
             const option = document.createElement('option');
             option.value = board.id;
@@ -95,7 +91,6 @@
       }
     }
 
-    // --- UPGRADED: PULL CHOSEN BLUEPRINT OUT OF DATABASE TO TRANSMIT TO BACKEND ENGINE ---
     async function launchSelectedGame() {
       const selectedId = document.getElementById('board-selector').value;
       
@@ -108,7 +103,7 @@
         const db = await openDB();
         const transaction = db.transaction("boards", "readonly");
         const store = transaction.objectStore("boards");
-        const request = store.get(selectedId); // Retrieve targeted image data array strings natively
+        const request = store.get(selectedId); 
 
         request.onsuccess = async () => {
           const selectedBoard = request.result;
@@ -118,7 +113,6 @@
             return;
           }
 
-          // Pass the entire custom board object blueprint straight up to the Socket server state engine
           const response = await fetch('/api/create-room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -138,7 +132,6 @@
       }
     }
 
-    // --- MODAL POPUP LOGIC ENGAGING ---
     function openEditModal() {
       const selector = document.getElementById('board-selector');
       
@@ -148,9 +141,8 @@
       }
 
       const listContainer = document.getElementById('modal-board-list');
-      listContainer.innerHTML = ""; // Wipe past links before loading fresh arrays
+      listContainer.innerHTML = ""; 
 
-      // Convert dropdown values into interactive modal selection layout buttons
       const optionsArray = Array.from(selector.options);
       optionsArray.forEach((option) => {
         const listItem = document.createElement('li');
@@ -163,7 +155,6 @@
         listContainer.appendChild(listItem);
       });
 
-      // Change CSS display state from none to flex to show overlay
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
